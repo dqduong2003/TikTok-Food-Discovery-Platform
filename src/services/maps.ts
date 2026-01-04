@@ -21,8 +21,9 @@ export async function findPlaceCoordinates(restaurantName: string, locationConte
     
     // Endpoint for the "New" Places API
     const url = "https://places.googleapis.com/v1/places:searchText";
-  
-    try {
+    
+    console.log("Getting exact coordinates...")
+    try {   
       const response = await axios.post<GooglePlaceResult>(
         url,
         {
