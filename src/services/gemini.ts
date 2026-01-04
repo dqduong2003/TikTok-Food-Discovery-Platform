@@ -62,9 +62,15 @@ export async function analyzeVideo(localFilePath: string) {
         // B. Analyze with Gemini 3 Flash
         const prompt = `
             Watch this video carefully. It is a food review.
-            1. Extract the restaurant name and location from the audio or text overlays.
+            
+            1. Extract the restaurant name and location. 
+            - **STRICT RULE**: Only return a location if it is **explicitly written on a text overlay or clearly spoken** in the audio.
+            - If the location is only implied (e.g., "downtown") or inferred from landmarks, **return null**.
+            - **Do not use external knowledge** to guess the location.
+            - If no specific address or city is explicitly verifiable in the media, return null.
+        
             2. Identify the specific dishes shown visually.
-            3. Summarize the 'vibe' based on food type, interior design and environment.
+            3. Summarize the 'vibe' based on food type, interior design, and environment.
             4. Judge the estimated enthusiasm of the reviewer for the restaurant from 1-10.
         `;
 
