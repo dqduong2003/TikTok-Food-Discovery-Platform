@@ -1,0 +1,21 @@
+{
+    "restaurant_name" : "groove.",
+    "address": "2/243 Franklin St, Melbourne CBD",
+    "dishes_detected": [
+        "Long Black",
+        "Matcha Roll Cake",
+        "Croissants",
+        "Matcha Latte",
+        "Shokupan Toast"
+    ],
+    "vibe_tags": [
+        "peaceful",
+        "hidden gem",
+        "modern",
+        "minimalist",
+        "study-friendly",
+        "cozy",
+        "Japanese-inspired"
+    ],
+    "sentiment_score": 9
+}
