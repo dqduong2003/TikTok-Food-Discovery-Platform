@@ -25,7 +25,8 @@ const extractionSchema = {
         items: { type: "string" },
         description: "Visual atmosphere (e.g., 'asian', 'street-food', 'authentic')" 
       },
-      sentiment_score: { type: "number", description: "1-10 Estimated enthusiasm of the reviewer for the restaurant" }
+      sentiment_score: { type: "number", description: "1-10 Estimated enthusiasm of the reviewer for the restaurant" },
+      summary: { type: "string" },
     },
     required: ["restaurant_name", "address", "dishes_detected", "vibe_tags"]
   };
@@ -68,10 +69,11 @@ export async function analyzeVideo(localFilePath: string) {
             - If the location is only implied (e.g., "downtown") or inferred from landmarks, **return null**.
             - **Do not use external knowledge** to guess the location.
             - If no specific address or city is explicitly verifiable in the media, return null.
-        
+
             2. Identify the specific dishes shown visually.
             3. Summarize the 'vibe' based on food type, interior design, and environment.
             4. Judge the estimated enthusiasm of the reviewer for the restaurant from 1-10.
+            5. Summarise the video in 1-2 sentences.
         `;
 
         const response = await ai.models.generateContent({
