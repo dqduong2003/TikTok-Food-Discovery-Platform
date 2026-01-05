@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
+    "scrape:local": "ts-node src/scripts/local-scraper.ts",
     "git": "git add . && git commit -m \"${npm_config_m:-auto commit $(date)}\" && git push"
   },
   "keywords": [],
