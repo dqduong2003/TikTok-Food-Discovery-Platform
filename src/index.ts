@@ -2,11 +2,13 @@ import { saveToDatabase } from "./services/db"
 import tiktokData from "../sample_data/tiktok.json";
 import geminiData from "../sample_data/gemini.json";
 import placesData from "../sample_data/places.json";
+import { processSingleVideo } from './controllers/ingestController';
 
 async function main() {
   // Import all sample data and transform to match the expected types
   const videoData = {
     id: tiktokData.id,
+    mediaUrls: tiktokData.mediaUrls,
     webVideoUrl: tiktokData.webVideoUrl,
     authorMeta: {
       name: tiktokData.authorMeta.name
@@ -33,7 +35,9 @@ async function main() {
   };
 
   // Save to database
-  await saveToDatabase(videoData, analysisData, placeData);
+  // await saveToDatabase(videoData, analysisData, placeData);
+
+  await processSingleVideo(videoData);
 }
 
 main();
