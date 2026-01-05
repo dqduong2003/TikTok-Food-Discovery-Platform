@@ -69,6 +69,7 @@ export async function processVideoPipeline(videoData: IngestData) {
         // ---------------------------------------------------------
         await saveToDatabase(videoData, analysis, place);
 
+        console.log('💾 DB Data Pipeline Complete Successfully.');
     } catch (error: any) {
         console.error("❌ Processing Error:", error.message);
     } finally {
