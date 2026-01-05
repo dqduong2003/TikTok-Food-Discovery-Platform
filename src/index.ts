@@ -14,6 +14,7 @@ async function main() {
       name: tiktokData.authorMeta.name
     },
     createTimeISO: tiktokData.createTimeISO,
+    platform: "TikTok",
   };
 
   const analysisData = {

@@ -12,6 +12,7 @@ interface VideoData {
     webVideoUrl: string;
     authorMeta: { name: string };
     createTimeISO: string;
+    platform: string;
 }
 interface GeminiAnalysis {
     restaurant_name: string;
@@ -94,8 +95,8 @@ export async function saveToDatabase (
                 name: place.name,
                 google_place_id: place.googlePlaceId,
                 address: place.address,
-                location: `POINT(${place.lng} ${place.lat})`, // PostGIS
-                cached_rating: analysis.sentiment_score, // Initial score = this review
+                location: `POINT(${place.lng} ${place.lat})`,   // PostGIS
+                cached_rating: analysis.sentiment_score,        // Initial score = this review
                 review_count: 1
                 })
                 .select('id')
@@ -106,6 +107,26 @@ export async function saveToDatabase (
         }
          
 
+        // =========================================================
+        // STEP B: SOCIAL POST (Insert)
+        // =========================================================
+        console.log(`📝 inserting Social Post...`);
+
+        const { data: newPost, error: postError } = await supabase
+        .from('social_posts')
+        .insert({
+            venue_id: venueId,   // Link to Venue (FK)
+            platform: video.platform,
+            external_id: video.id,
+            original_url: video.webVideoUrl,
+            author: video.authorMeta.name,
+            posted_at: video.createTimeISO     
+          })
+        .select('id')
+        .single();
+
+        if (postError) throw new Error(`Post insertion failed: ${postError.message}`);
+        const postId = newPost.id;
 
     } catch (err) {
         console.error('❌ Transaction Failed:', err);
