@@ -20,7 +20,21 @@ export async function processVideoPipeline(videoData: IngestData) {
     let tempFilePath: string | null = null;
 
     try {
-        console.log(`🚀 Processing Video: ${videoData.id}`);
+        console.log(`🚀 Start Video Processing Pipeline...`);
+        // ---------------------------------------------------------
+        // 0. DETECT PLATFORM (Auto-assign based on URL)
+        // ---------------------------------------------------------
+        const urlLower = videoData.webVideoUrl.toLowerCase();
+        
+        if (urlLower.includes("tiktok")) {
+            videoData.platform = "TikTok"; // Must match DB Enum exactly
+        } else if (urlLower.includes("instagram")) {
+            videoData.platform = "IG";     // Must match DB Enum exactly
+        } else {
+            // Optional: Default to TikTok or throw error if unknown
+            console.warn("⚠️ Unknown platform URL. Defaulting to TikTok.");
+            videoData.platform = "TikTok"; 
+        }
 
         // ---------------------------------------------------------
         // 1. DUPLICATE CHECK
@@ -28,7 +42,7 @@ export async function processVideoPipeline(videoData: IngestData) {
         const exists = await checkPostExists(videoData.id);
         if (exists) {
             console.log(`🛑 Video ${videoData.id} already exists. Skipping.`);
-            return;
+            return { status: 'skipped', reason: 'duplicate' };
         }
 
         // ---------------------------------------------------------
@@ -60,7 +74,7 @@ export async function processVideoPipeline(videoData: IngestData) {
         
         if (!place) {
             console.warn("⚠️ Location not found in Google Maps. Aborting save.");
-            return; 
+            return { status: 'failed', reason: 'location_not_found' }; 
         }
         console.log(place);
 
@@ -68,8 +82,8 @@ export async function processVideoPipeline(videoData: IngestData) {
         // 5. SAVE TO DATABASE
         // ---------------------------------------------------------
         await saveToDatabase(videoData, analysis, place);
-
         console.log('💾 DB Data Pipeline Complete Successfully.');
+        return { status: 'success', venue: place.name }
     } catch (error: any) {
         console.error("❌ Processing Error:", error.message);
     } finally {
