@@ -28,7 +28,6 @@ export async function processVideoPipeline(videoData: IngestData) {
         const exists = await checkPostExists(videoData.id);
         if (exists) {
             console.log(`🛑 Video ${videoData.id} already exists. Skipping.`);
-            // res.status(200).json({ status: 'skipped', reason: 'duplicate' });
             return;
         }
 
@@ -39,16 +38,26 @@ export async function processVideoPipeline(videoData: IngestData) {
             throw new Error("No media URLs provided");
         }     
         console.log("⬇️ Downloading video...");
+        tempFilePath = await downloadTempVideo(videoData.mediaUrls[0], videoData.id);
+        // console.log(tempFilePath);
 
         // ---------------------------------------------------------
         // 3. GEMINI ANALYSIS
         // ---------------------------------------------------------
         console.log("🤖 Running Gemini Analysis...");
+        const analysis = await analyzeVideo(tempFilePath);
+        if (!analysis) throw new Error("Gemini Analysis Failed");
+
+        // Add the full raw response for storage
+        analysis.full_json_response = analysis;
+        console.log(analysis);
 
         // ---------------------------------------------------------
         // 4. GOOGLE MAPS VERIFICATION
         // ---------------------------------------------------------
-
+        console.log(`🗺️ Verifying location: ${analysis.restaurant_name} in ${analysis.location_area}`);
+        
+        
         // ---------------------------------------------------------
         // 5. SAVE TO DATABASE
         // ---------------------------------------------------------
