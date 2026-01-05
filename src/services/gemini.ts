@@ -31,7 +31,7 @@ const extractionSchema = {
     required: ["restaurant_name", "address", "dishes_detected", "vibe_tags"]
   };
 
-// 1. Helper: Upload Video to Google
+// 1. Upload Video to Google
 async function uploadToGemini(filePath: string, mimeType: string) {
     const myfile = await ai.files.upload({
         file: filePath,
