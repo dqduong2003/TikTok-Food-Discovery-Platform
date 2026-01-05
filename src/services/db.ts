@@ -30,6 +30,22 @@ interface GooglePlaceData {
     lng: number;
 }
 
+// ---------------------------------------------------------
+// "Pre-Check" Function
+// ---------------------------------------------------------
+export async function checkPostExists(externalId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from('social_posts')
+      .select('id')
+      .eq('external_id', externalId)
+      .maybeSingle();
+  
+    if (error) {
+      console.error("Error checking post existence:", error);
+      return false; // Assume false to be safe, or throw error
+    }
+    return !!data; // Returns true if exists, false if not
+}
 
 // ---------------------------------------------------------
 // Main Transaction Function
