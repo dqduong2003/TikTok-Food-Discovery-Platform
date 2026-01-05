@@ -1,5 +1,3 @@
-import { analyzeVideo } from "./services/gemini";
-import { findPlaceCoordinates } from "./services/maps"
 import { saveToDatabase } from "./services/db"
 import tiktokData from "../sample_data/tiktok.json";
 import geminiData from "../sample_data/gemini.json";
@@ -36,7 +34,6 @@ async function main() {
 
   // Save to database
   await saveToDatabase(videoData, analysisData, placeData);
-  console.log("✅ Data saved to database successfully!");
 }
 
 main();

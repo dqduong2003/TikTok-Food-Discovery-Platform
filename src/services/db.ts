@@ -106,7 +106,6 @@ export async function saveToDatabase (
             venueId = newVenue.id;
         }
          
-
         // =========================================================
         // STEP B: SOCIAL POST (Insert)
         // =========================================================
@@ -128,6 +127,25 @@ export async function saveToDatabase (
         if (postError) throw new Error(`Post insertion failed: ${postError.message}`);
         const postId = newPost.id;
 
+        // =========================================================
+        // STEP C: AI INSIGHTS (Insert)
+        // =========================================================
+        console.log(`🧠 inserting AI Insights...`);
+
+        const { error: insightError } = await supabase
+        .from('ai_insights')
+        .insert({
+            post_id: postId,    // Link to Post (FK)
+            summary: analysis.summary,
+            dishes_detected: analysis.dishes_detected,
+            vibe_tags: analysis.vibe_tags,
+            sentiment_score: analysis.sentiment_score,
+            extracted_json: analysis.full_json_response
+        });
+
+        if (insightError) throw new Error(`Insights insertion failed: ${insightError.message}`);
+
+        console.log('✅ Data Pipeline Complete Successfully.');
     } catch (err) {
         console.error('❌ Transaction Failed:', err);
         throw err; // Re-throw so the worker knows this job failed
