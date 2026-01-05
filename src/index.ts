@@ -1,8 +1,7 @@
-import { saveToDatabase } from "./services/db"
 import tiktokData from "../sample_data/tiktok.json";
 import geminiData from "../sample_data/gemini.json";
 import placesData from "../sample_data/places.json";
-import { processSingleVideo } from './controllers/ingestController';
+import { processVideoPipeline, IngestData } from './services/workflow';
 
 async function main() {
   // Import all sample data and transform to match the expected types
@@ -37,7 +36,8 @@ async function main() {
   // Save to database
   // await saveToDatabase(videoData, analysisData, placeData);
 
-  await processSingleVideo(videoData);
+  await processVideoPipeline(videoData);
+  // await processSingleVideo(videoData);
 }
 
 main();
