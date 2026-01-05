@@ -73,7 +73,7 @@ export async function analyzeVideo(localFilePath: string) {
             2. Identify the specific dishes shown visually.
             3. Summarize the 'vibe' based on food type, interior design, and environment.
             4. Judge the estimated enthusiasm of the reviewer for the restaurant from 1-10.
-            5. Summarise the video in 1-2 sentences.
+            5. Summarise the review in 3 sentences.
         `;
 
         const response = await ai.models.generateContent({
