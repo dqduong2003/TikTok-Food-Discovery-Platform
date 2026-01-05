@@ -5,7 +5,7 @@ import { processVideoPipeline, IngestData } from '../services/workflow';
 async function run() {
   try {
     // 1. Read local JSON file
-    const jsonPath = path.join(__dirname, '../../data/tiktok-data.json'); 
+    const jsonPath = path.join(__dirname, '../../data/dessert-data.json'); 
     
     if (!fs.existsSync(jsonPath)) {
       throw new Error(`File not found at: ${jsonPath}`);

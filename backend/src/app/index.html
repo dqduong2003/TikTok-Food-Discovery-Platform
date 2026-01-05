@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Porous Terrazzo Food Finder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --stone-dark: #2d2a28;
+            --terracotta: #e2725b;
+            --sage: #8a9a5b;
+            --cobalt: #2e5a88;
+            --grain-opacity: 0.04;
+            --terrazzo-pattern: 
+                radial-gradient(circle at 20% 30%, #e2725b 2px, transparent 0),
+                radial-gradient(circle at 80% 10%, #2e5a88 4px, transparent 0),
+                radial-gradient(circle at 40% 70%, #8a9a5b 3px, transparent 0),
+                radial-gradient(circle at 70% 85%, #d4a373 5px, transparent 0),
+                radial-gradient(circle at 10% 90%, #2d2a28 2px, transparent 0);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: crosshair;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: var(--terrazzo-pattern);
+            background-size: 400px 400px;
+            font-family: 'Inter', sans-serif;
+            color: var(--stone-dark);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Noise Texture Overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: var(--grain-opacity);
+            pointer-events: none;
+            background: url('data:image/svg+xml,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
+            z-index: 100;
+        }
+
+        header {
+            padding: 40px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 10;
+        }
+
+        .brand h1 {
+            font-weight: 800;
+            font-size: 3rem;
+            letter-spacing: -2px;
+            text-transform: lowercase;
+            line-height: 0.8;
+        }
+
+        .search-container {
+            position: relative;
+            width: 400px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--stone-dark);
+            padding: 15px 25px;
+            border-radius: 100px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        input[type="text"]:focus {
+            background: white;
+            box-shadow: 10px 10px 0px var(--terracotta);
+            transform: translate(-4px, -4px);
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            flex-grow: 1;
+            padding: 0 60px 40px 60px;
+            gap: 40px;
+            overflow: hidden;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sort-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            padding: 6px 12px;
+            border: 1px solid var(--stone-dark);
+            background: transparent;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .sort-btn:hover, .sort-btn.active {
+            background: var(--stone-dark);
+            color: white;
+        }
+
+        .results-pane {
+            overflow-y: auto;
+            padding-right: 15px;
+            mask-image: linear-gradient(to bottom, black 90%, transparent);
+        }
+
+        .results-pane::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .results-pane::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+        }
+
+        .place-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 40px 8px 40px 8px;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: slideUp 0.6s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .place-card:hover {
+            transform: scale(1.02) rotate(-1deg);
+            box-shadow: 15px 15px 0px rgba(138, 154, 91, 0.2);
+            border-color: var(--sage);
+        }
+
+        .place-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+            font-weight: 800;
+        }
+
+        .place-card .address {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .place-card .review-snippet {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            font-style: italic;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        .place-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px dashed #ccc;
+            padding-top: 15px;
+        }
+
+        .rating {
+            font-family: 'Space Mono', monospace;
+            background: var(--stone-dark);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .review-count {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Map Section */
+        .map-viewport {
+            background: #e9e4df;
+            border-radius: 60px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--stone-dark);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.05);
+        }
+
+        .map-grid {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            top: -50%;
+            left: -50%;
+            transform: rotate(-15deg);
+        }
+
+        .map-marker {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: var(--cobalt);
+            border: 3px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 5;
+        }
+
+        .map-marker::after {
+            content: "";
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 100%; height: 100%;
+            background: var(--cobalt);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.3;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+        }
+
+        .map-marker:hover {
+            transform: translate(-50%, -50%) scale(1.5);
+            background: var(--terracotta);
+            z-index: 10;
+        }
+
+        .map-marker:hover .marker-label {
+            opacity: 1;
+            transform: translateY(-40px) translateX(-50%);
+        }
+
+        .marker-label {
+            position: absolute;
+            background: var(--stone-dark);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            left: 50%;
+            transition: all 0.3s;
+            box-shadow: 5px 5px 0px var(--sage);
+        }
+
+        /* Responsive */
+        @media (max-width: 1000px) {
+            main { grid-template-columns: 1fr; }
+            .map-viewport { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <p style="font-family:'Space Mono'; font-size: 0.8rem; margin-bottom: 10px;">EST. 2024</p>
+            <h1>porous.<br>epicure</h1>
+        </div>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search: e.g. 'Artisan Sourdough'..." onkeyup="filterPlaces()">
+        </div>
+    </header>
+
+    <main>
+        <div class="sidebar">
+            <div class="controls">
+                <button class="sort-btn active" onclick="sortPlaces('rating')">TOP RATED</button>
+                <button class="sort-btn" onclick="sortPlaces('reviews')">MOST REVIEWS</button>
+            </div>
+            <div class="results-pane" id="resultsPane">
+                <!-- Cards injected here -->
+            </div>
+        </div>
+
+        <div class="map-viewport" id="map">
+            <div class="map-grid"></div>
+            <!-- Markers injected here -->
+        </div>
+    </main>
+
+    <script>
+        const places = [
+            { id: 1, name: "The Clay Oven", addr: "42 Terrazzo Lane", rating: 4.9, reviews: 128, text: "The crust is like porous stone, light and perfectly charred.", x: 30, y: 40, color: 'var(--terracotta)' },
+            { id: 2, name: "Sage & Stone", addr: "88 Mineral Blvd", rating: 4.7, reviews: 342, text: "Earthy interiors with a focus on cold-pressed extractions.", x: 70, y: 20, color: 'var(--sage)' },
+            { id: 3, name: "Cobalt Coffee", addr: "15 Industrial St", rating: 4.5, reviews: 890, text: "The espresso has a mineral depth that lingers beautifully.", x: 50, y: 65, color: 'var(--cobalt)' },
+            { id: 4, name: "Basalt Bistro", addr: "9 Volcanic Ave", rating: 4.8, reviews: 56, text: "Intimate seating with textures that invite conversation.", x: 20, y: 80, color: 'var(--stone-dark)' },
+            { id: 5, name: "Pebble Patisserie", addr: "102 Sand Circle", rating: 4.2, reviews: 1205, text: "Delicate layers that crumble into a sweet silt.", x: 80, y: 75, color: '#d4a373' }
+        ];
+
+        function renderUI(data) {
+            const resultsPane = document.getElementById('resultsPane');
+            const map = document.getElementById('map');
+            
+            // Clear current
+            resultsPane.innerHTML = '';
+            document.querySelectorAll('.map-marker').forEach(m => m.remove());
+
+            data.forEach((place, index) => {
+                // Card
+                const card = document.createElement('div');
+                card.className = 'place-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.innerHTML = `
+                    <h3>${place.name}</h3>
+                    <span class="address">${place.addr}</span>
+                    <p class="review-snippet">"${place.text}"</p>
+                    <div class="place-meta">
+                        <span class="rating">${place.rating} / 5.0</span>
+                        <span class="review-count">${place.reviews} verified reviews</span>
+                    </div>
+                `;
+                card.onmouseenter = () => highlightMarker(place.id, true);
+                card.onmouseleave = () => highlightMarker(place.id, false);
+                resultsPane.appendChild(card);
+
+                // Marker
+                const marker = document.createElement('div');
+                marker.className = 'map-marker';
+                marker.id = `marker-${place.id}`;
+                marker.style.left = `${place.x}%`;
+                marker.style.top = `${place.y}%`;
+                marker.style.backgroundColor = place.color;
+                marker.innerHTML = `<div class="marker-label">${place.name}</div>`;
+                map.appendChild(marker);
+            });
+        }
+
+        function filterPlaces() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = places.filter(p => 
+                p.name.toLowerCase().includes(term) || 
+                p.text.toLowerCase().includes(term)
+            );
+            renderUI(filtered);
+        }
+
+        function sortPlaces(criteria) {
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const sorted = [...places].sort((a, b) => {
+                if (criteria === 'rating') return b.rating - a.rating;
+                if (criteria === 'reviews') return b.reviews - a.reviews;
+            });
+            renderUI(sorted);
+        }
+
+        function highlightMarker(id, active) {
+            const marker = document.getElementById(`marker-${id}`);
+            if (marker) {
+                marker.style.transform = active ? 'translate(-50%, -50%) scale(2)' : 'translate(-50%, -50%) scale(1)';
+                marker.querySelector('.marker-label').style.opacity = active ? '1' : '0';
+                marker.querySelector('.marker-label').style.transform = active ? 'translateY(-40px) translateX(-50%)' : 'translateY(0) translateX(-50%)';
+            }
+        }
+
+        // Initial load
+        renderUI(places);
+    </script>
+</body>
+</html>
