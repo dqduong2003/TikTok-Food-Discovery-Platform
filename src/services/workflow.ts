@@ -49,7 +49,7 @@ export async function processVideoPipeline(videoData: IngestData) {
         if (!analysis) throw new Error("Gemini Analysis Failed");
 
         // Add the full raw response for storage
-        analysis.full_json_response = analysis;
+        analysis.full_json_response = { ...analysis };
         console.log(analysis);
 
         // ---------------------------------------------------------
@@ -63,18 +63,18 @@ export async function processVideoPipeline(videoData: IngestData) {
             return; 
         }
         console.log(place);
+
         // ---------------------------------------------------------
         // 5. SAVE TO DATABASE
         // ---------------------------------------------------------
 
-
     } catch (error: any) {
         console.error("❌ Processing Error:", error.message);
-        // res.status(500).json({ error: error.message });
     } finally {
         // CLEANUP
         if (tempFilePath && fs.existsSync(tempFilePath)) {
           fs.unlinkSync(tempFilePath);
+          console.log("🧹 Temp file cleaned up.");
         }
     }
 }
