@@ -56,11 +56,18 @@ export async function processVideoPipeline(videoData: IngestData) {
         // 4. GOOGLE MAPS VERIFICATION
         // ---------------------------------------------------------
         console.log(`🗺️ Verifying location: ${analysis.restaurant_name} in ${analysis.location_area}`);
+        const place = await findPlaceCoordinates(analysis.restaurant_name, analysis.location_area);
         
-        
+        if (!place) {
+            console.warn("⚠️ Location not found in Google Maps. Aborting save.");
+            return; 
+        }
+        console.log(place);
         // ---------------------------------------------------------
         // 5. SAVE TO DATABASE
         // ---------------------------------------------------------
+
+
     } catch (error: any) {
         console.error("❌ Processing Error:", error.message);
         // res.status(500).json({ error: error.message });
