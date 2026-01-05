@@ -1,23 +1,41 @@
 import { analyzeVideo } from "./services/gemini";
 import { findPlaceCoordinates } from "./services/maps"
-import * as place from "./sample_data.json";
-
+import { saveToDatabase } from "./services/db"
+import tiktokData from "../sample_data/tiktok.json";
+import geminiData from "../sample_data/gemini.json";
+import placesData from "../sample_data/places.json";
 
 async function main() {
-  const sampleVideoPath = "./video/multi.mp4"
+  // Import all sample data and transform to match the expected types
+  const videoData = {
+    id: tiktokData.id,
+    webVideoUrl: tiktokData.webVideoUrl,
+    authorMeta: {
+      name: tiktokData.authorMeta.name
+    },
+    createTimeISO: tiktokData.createTimeISO,
+  };
 
-  // 1. Gemini extracts raw text
-  const insightData = await analyzeVideo(sampleVideoPath);
-  console.log(insightData);
+  const analysisData = {
+    restaurant_name: geminiData.restaurant_name,
+    dishes_detected: geminiData.dishes_detected,
+    vibe_tags: geminiData.vibe_tags,
+    sentiment_score: geminiData.sentiment_score,
+    summary: geminiData.summary,
+    full_json_response: geminiData
+  };
 
-  // 2. Google Maps verifies it and gets coords
-  // const officialPlace = await findPlaceCoordinates(place.restaurant_name, place.address)
-  if (insightData && insightData.restaurant_name) {
-    const officialPlace = await findPlaceCoordinates(insightData.restaurant_name, insightData.address)
-    if (officialPlace) {
-      console.log(officialPlace);
-    }
-  }
+  const placeData = {
+    googlePlaceId: placesData.googlePlaceId,
+    name: placesData.name,
+    address: placesData.address,
+    lat: placesData.lat,
+    lng: placesData.lng
+  };
+
+  // Save to database
+  await saveToDatabase(videoData, analysisData, placeData);
+  console.log("✅ Data saved to database successfully!");
 }
 
 main();
