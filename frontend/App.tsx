@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Place } from './types';
 import { PlaceCard } from './components/PlaceCard';
 import { ReviewModal } from './components/ReviewModal';
-import MapComponent from './components/MapComponent'; // Import the new component
+import MapComponent from './components/MapComponent';
 
 // --- HELPERS ---
 
@@ -21,7 +21,6 @@ const transformBackendData = (backendRow: any): Place => {
     videoUrl: backendRow.preview_video_url,
     lat: backendRow.lat,
     lng: backendRow.lng,
-    // x/y are no longer needed for Mapbox, but kept if your Place type strictly requires them
     x: 0, 
     y: 0,
     color: randomColor
@@ -39,6 +38,9 @@ const App: React.FC = () => {
   const [activePlaceId, setActivePlaceId] = useState<number | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 1. NEW: Create a Ref to store card DOM elements
+  const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   // FETCH
   useEffect(() => {
@@ -67,6 +69,16 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // 2. NEW: Scroll to the active item whenever activePlaceId changes
+  useEffect(() => {
+    if (activePlaceId !== null && itemRefs.current[activePlaceId]) {
+      itemRefs.current[activePlaceId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest', // 'nearest' prevents it from jumping if already visible
+      });
+    }
+  }, [activePlaceId]);
+
   // SORT
   const sortedPlaces = [...places].sort((a, b) => {
       if (sortCriteria === 'rating') return b.rating - a.rating;
@@ -81,7 +93,7 @@ const App: React.FC = () => {
         <div className="brand">
           <p className="font-['Space_Mono'] text-[0.8rem] mb-2.5 text-gray-500">EST. 2026</p>
           <h1 className="font-[800] text-[3rem] tracking-[-2px] lowercase leading-[0.8] text-[#2d2a28]">
-            reel food<br/>places
+            reel food<br/>places.
           </h1>
         </div>
         <div className="relative w-[400px]">
@@ -123,15 +135,20 @@ const App: React.FC = () => {
              )}
 
              {sortedPlaces.map((place, index) => (
-               <PlaceCard 
-                 key={place.id}
-                 place={place}
-                 index={index}
-                 isActive={activePlaceId === place.id}
-                 onMouseEnter={() => setActivePlaceId(place.id)}
-                 onMouseLeave={() => setActivePlaceId(null)}
-                 onClick={() => setSelectedPlace(place)}
-               />
+               // 3. NEW: Wrap in div and attach REF here
+               <div 
+                  key={place.id} 
+                  ref={(el) => (itemRefs.current[place.id] = el)}
+               >
+                 <PlaceCard 
+                   place={place}
+                   index={index}
+                   isActive={activePlaceId === place.id}
+                   onMouseEnter={() => setActivePlaceId(place.id)}
+                   onMouseLeave={() => setActivePlaceId(null)}
+                   onClick={() => setSelectedPlace(place)}
+                 />
+               </div>
              ))}
              
              {!isLoading && sortedPlaces.length === 0 && (
@@ -142,12 +159,14 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Map Viewport - Replaced with new component */}
+        {/* Map Viewport */}
         <div className="hidden lg:block h-full w-full relative rounded-[30px] border-2 border-[#2d2a28] overflow-hidden shadow-lg">
            <MapComponent 
               places={sortedPlaces}
               activePlaceId={activePlaceId}
               onMarkerClick={setSelectedPlace}
+              onMarkerMouseEnter={(id) => setActivePlaceId(id)}
+              onMarkerMouseLeave={() => setActivePlaceId(null)}
            />
         </div>
 
