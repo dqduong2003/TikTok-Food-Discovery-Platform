@@ -37,7 +37,7 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({
       <p className="text-sm italic leading-relaxed text-[#444] mb-5">"{place.text}"</p>
       <div className="flex justify-between items-center pt-4 border-t border-dashed border-[#ccc]">
         <span className="font-['Space_Mono'] bg-[#2d2a28] text-white px-3 py-1 rounded font-bold text-sm">
-          {place.rating} / 5.0
+          {place.rating} / 10
         </span>
         <span className="text-[0.7rem] uppercase tracking-wider font-medium text-[#2d2a28]">
           {place.reviews} verified reviews

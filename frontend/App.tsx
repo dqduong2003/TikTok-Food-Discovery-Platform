@@ -1,52 +1,93 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Place } from './types';
 import { PlaceCard } from './components/PlaceCard';
 import { ReviewModal } from './components/ReviewModal';
+import MapComponent from './components/MapComponent'; // Import the new component
 
-const INITIAL_PLACES: Place[] = [
-  { id: 1, name: "The Clay Oven", addr: "42 Terrazzo Lane", rating: 4.9, reviews: 128, text: "The crust is like porous stone, light and perfectly charred.", x: 30, y: 40, color: '#e2725b' },
-  { id: 2, name: "Sage & Stone", addr: "88 Mineral Blvd", rating: 4.7, reviews: 342, text: "Earthy interiors with a focus on cold-pressed extractions.", x: 70, y: 20, color: '#8a9a5b' },
-  { id: 3, name: "Cobalt Coffee", addr: "15 Industrial St", rating: 4.5, reviews: 890, text: "The espresso has a mineral depth that lingers beautifully.", x: 50, y: 65, color: '#2e5a88' },
-  { id: 4, name: "Basalt Bistro", addr: "9 Volcanic Ave", rating: 4.8, reviews: 56, text: "Intimate seating with textures that invite conversation.", x: 20, y: 80, color: '#2d2a28' },
-  { id: 5, name: "Pebble Patisserie", addr: "102 Sand Circle", rating: 4.2, reviews: 1205, text: "Delicate layers that crumble into a sweet silt.", x: 80, y: 75, color: '#d4a373' }
-];
+// --- HELPERS ---
+
+const transformBackendData = (backendRow: any): Place => {
+  const colors = ['#e2725b', '#8a9a5b', '#2e5a88', '#2d2a28', '#d4a373'];
+  const randomColor = colors[backendRow.id % colors.length];
+
+  return {
+    id: backendRow.id,
+    name: backendRow.name,
+    addr: backendRow.address || 'Unknown Address',
+    rating: backendRow.cached_rating || 0,
+    reviews: backendRow.review_count || 0,
+    text: backendRow.consolidated_vibes?.[0] || "A hidden gem.",
+    vibes: backendRow.consolidated_vibes || [],
+    videoUrl: backendRow.preview_video_url,
+    lat: backendRow.lat,
+    lng: backendRow.lng,
+    // x/y are no longer needed for Mapbox, but kept if your Place type strictly requires them
+    x: 0, 
+    y: 0,
+    color: randomColor
+  };
+};
+
+// --- COMPONENT ---
 
 type SortCriteria = 'rating' | 'reviews';
 
 const App: React.FC = () => {
+  const [places, setPlaces] = useState<Place[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<SortCriteria>('rating');
   const [activePlaceId, setActivePlaceId] = useState<number | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filteredPlaces = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    let result = INITIAL_PLACES.filter(p => 
-      p.name.toLowerCase().includes(term) || 
-      p.text.toLowerCase().includes(term)
-    );
+  // FETCH
+  useEffect(() => {
+    const fetchVenues = async () => {
+      setIsLoading(true);
+      try {
+        const url = searchTerm 
+          ? `http://localhost:4000/api/search?q=${encodeURIComponent(searchTerm)}`
+          : `http://localhost:4000/api/search`;
+        
+        const res = await fetch(url);
+        const json = await res.json();
 
-    return result.sort((a, b) => {
+        if (json.success) {
+          const adapted = json.data.map(transformBackendData);
+          setPlaces(adapted);
+        }
+      } catch (err) {
+        console.error("Failed to fetch venues:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const timer = setTimeout(fetchVenues, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // SORT
+  const sortedPlaces = [...places].sort((a, b) => {
       if (sortCriteria === 'rating') return b.rating - a.rating;
       if (sortCriteria === 'reviews') return b.reviews - a.reviews;
       return 0;
-    });
-  }, [searchTerm, sortCriteria]);
+  });
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-screen overflow-hidden bg-[#f4f1ee]">
       {/* Header */}
-      <header className="px-[60px] py-[40px] flex justify-between items-end relative z-10">
+      <header className="px-[60px] py-[30px] flex justify-between items-end relative z-10 shrink-0">
         <div className="brand">
-          <p className="font-['Space_Mono'] text-[0.8rem] mb-2.5">EST. 2024</p>
+          <p className="font-['Space_Mono'] text-[0.8rem] mb-2.5 text-gray-500">EST. 2026</p>
           <h1 className="font-[800] text-[3rem] tracking-[-2px] lowercase leading-[0.8] text-[#2d2a28]">
-            porous.<br/>epicure
+            reel food<br/>places
           </h1>
         </div>
         <div className="relative w-[400px]">
           <input 
             type="text" 
-            placeholder="Search: e.g. 'Artisan Sourdough'..." 
+            placeholder="Search: e.g. 'Matcha'..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-white/70 backdrop-blur-md border-2 border-[#2d2a28] py-[15px] px-[25px] rounded-full font-['Space_Mono'] text-[1rem] outline-none transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] focus:bg-white focus:shadow-[10px_10px_0px_#e2725b] focus:-translate-x-1 focus:-translate-y-1"
@@ -55,9 +96,9 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="grid grid-cols-1 lg:grid-cols-[450px_1fr] flex-grow px-[60px] pb-[40px] gap-[40px] overflow-hidden">
+      <main className="grid grid-cols-1 lg:grid-cols-[450px_1fr] flex-grow px-[60px] pb-[40px] gap-[40px] overflow-hidden min-h-0">
         
-        {/* Sidebar */}
+        {/* Sidebar List */}
         <div className="flex flex-col h-full overflow-hidden">
           <div className="flex gap-[15px] mb-[20px] shrink-0">
             <button 
@@ -74,8 +115,14 @@ const App: React.FC = () => {
             </button>
           </div>
           
-          <div className="overflow-y-auto pr-[15px] pb-10 custom-scrollbar mask-image-gradient flex-grow">
-             {filteredPlaces.map((place, index) => (
+          <div className="overflow-y-auto pr-[15px] pb-10 custom-scrollbar mask-image-gradient flex-grow relative">
+             {isLoading && (
+                 <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-20 flex items-center justify-center font-['Space_Mono']">
+                     Loading...
+                 </div>
+             )}
+
+             {sortedPlaces.map((place, index) => (
                <PlaceCard 
                  key={place.id}
                  place={place}
@@ -86,55 +133,24 @@ const App: React.FC = () => {
                  onClick={() => setSelectedPlace(place)}
                />
              ))}
-             {filteredPlaces.length === 0 && (
+             
+             {!isLoading && sortedPlaces.length === 0 && (
                 <div className="p-8 text-center font-['Space_Mono'] text-gray-500 italic">
-                    No places found hiding in the terrazzo.
+                   No places found hiding in the terrazzo.
                 </div>
              )}
           </div>
         </div>
 
-        {/* Map Viewport */}
-        <div className="hidden lg:block bg-[#e9e4df] rounded-[60px] relative overflow-hidden border-2 border-[#2d2a28] shadow-[inset_0_0_50px_rgba(0,0,0,0.05)]">
-            <div className="map-grid-pattern absolute w-[200%] h-[200%] -top-1/2 -left-1/2 -rotate-[15deg] pointer-events-none"></div>
-            
-            {INITIAL_PLACES.map(place => {
-                const isActive = activePlaceId === place.id;
-                return (
-                    <div 
-                        key={place.id}
-                        className={`
-                            absolute w-6 h-6 border-[3px] border-white rounded-full 
-                            transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] z-10 marker-pulse
-                            cursor-pointer
-                        `}
-                        style={{ 
-                            left: `${place.x}%`, 
-                            top: `${place.y}%`, 
-                            backgroundColor: place.color,
-                            transform: isActive ? 'translate(-50%, -50%) scale(2)' : 'translate(-50%, -50%) scale(1)',
-                            zIndex: isActive ? 20 : 10
-                        }}
-                        onMouseEnter={() => setActivePlaceId(place.id)}
-                        onMouseLeave={() => setActivePlaceId(null)}
-                        onClick={() => setSelectedPlace(place)}
-                    >
-                         <div 
-                            className={`
-                                absolute bg-[#2d2a28] text-white px-4 py-2 rounded font-['Space_Mono'] text-[0.7rem] whitespace-nowrap pointer-events-none
-                                shadow-[5px_5px_0px_#8a9a5b] transition-all duration-300 left-1/2
-                            `}
-                            style={{
-                                opacity: isActive ? 1 : 0,
-                                transform: isActive ? 'translateY(-40px) translateX(-50%)' : 'translateY(0) translateX(-50%)'
-                            }}
-                         >
-                            {place.name}
-                         </div>
-                    </div>
-                );
-            })}
+        {/* Map Viewport - Replaced with new component */}
+        <div className="hidden lg:block h-full w-full relative rounded-[30px] border-2 border-[#2d2a28] overflow-hidden shadow-lg">
+           <MapComponent 
+              places={sortedPlaces}
+              activePlaceId={activePlaceId}
+              onMarkerClick={setSelectedPlace}
+           />
         </div>
+
       </main>
 
       {/* Modal */}
