@@ -3,13 +3,12 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Place } from '../types';
 
-mapboxgl.accessToken = ""; 
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN; 
 
 interface MapComponentProps {
   places: Place[];
   activePlaceId: number | null;
   onMarkerClick: (place: Place) => void;
-  // NEW: Add hover handlers to sync with App state
   onMarkerMouseEnter: (id: number) => void;
   onMarkerMouseLeave: () => void;
 }
