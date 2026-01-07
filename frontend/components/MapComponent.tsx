@@ -2,6 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Place } from '../types';
+// 1. Import CSS and Plugin
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN; 
 
@@ -38,6 +41,22 @@ const MapComponent: React.FC<MapComponentProps> = ({
     });
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    // 2. Add the Geocoder Control
+    const geocoder = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      marker: false,
+      placeholder: 'Search for an area...',
+      collapsed: true,
+    });
+
+    mapRef.current.addControl(geocoder, 'top-left');
+
+    // 3. Optional: Listen for result to trigger your own logic (e.g. search DB in that area)
+    geocoder.on('result', (e) => {
+      const coords = e.result.geometry.coordinates;
+      console.log("User moved map to:", coords);
+    });
 
     return () => {
       mapRef.current?.remove();

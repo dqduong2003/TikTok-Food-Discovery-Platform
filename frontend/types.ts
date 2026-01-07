@@ -15,11 +15,13 @@ export interface Place {
   color: string;
 }
 
-export interface TikTokReview {
-  summary: string;
-  originalUrl: string;
+export interface VenuePost {
+  id: number;
   author: string;
-  featuredDishes: string[];
-  vibes: string;
-  datePosted: string;
+  summary: string;
+  posted_at: string;
+  platform: string;
+  vibe_tags: string[];
+  dishes_detected: string[]; 
+  original_url: string;
 }
