@@ -1,10 +1,12 @@
 import { Router } from 'express';
-import { searchVenues } from '../controllers/searchController';
+import { searchVenues, getVenuePosts } from '../controllers/searchController';
 
 const router = Router();
 
-// Define the route
-// GET http://localhost:3000/api/search?q=matcha
+// Search route
 router.get('/search', searchVenues);
+
+// Get detailed posts for a specific venue
+router.get('/venues/:id/posts', getVenuePosts);
 
 export default router;

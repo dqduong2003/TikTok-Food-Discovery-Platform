@@ -18,8 +18,6 @@ export const searchVenues = async (req: Request, res: Response) => {
           preview_video_url, consolidated_vibes, consolidated_dishes,
           lat, lng  
         `); 
-        // ^ NOW WORKS: 'lat' and 'lng' are available because of the SQL functions above.
-        // We removed 'location' to save bandwidth since we have the coords now.
 
         // A. Full Text Search
         if (queryText) {
@@ -50,3 +48,63 @@ export const searchVenues = async (req: Request, res: Response) => {
         return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 }
+
+export const getVenuePosts = async (req: Request, res: Response) => {
+    try {
+        // Expecting venue_id from URL params (e.g., /api/venues/:id/posts)
+        const { id } = req.params; 
+
+        if (!id) {
+            return res.status(400).json({ success: false, error: 'Venue ID is required' });
+        }
+
+        console.log(`🔍 Fetching posts for Venue ID: ${id}`);
+
+        // Query: Get posts + their linked AI insights
+        const { data, error } = await supabase
+            .from('social_posts')
+            .select(`
+                id,
+                author,
+                posted_at,
+                platform,
+                original_url, 
+                ai_insights (
+                    summary,
+                    vibe_tags,
+                    dishes_detected
+                )
+            `)
+            .eq('venue_id', id)
+            .order('posted_at', { ascending: false }); // Newest first
+
+        if (error) throw error;
+
+        // Flatten the structure for the frontend
+        const formattedPosts = data.map((post: any) => {
+            // Handle case where ai_insights might be null (not yet processed)
+            const insights = post.ai_insights?.[0] || post.ai_insights || {};
+
+            return {
+                id: post.id,
+                author: post.author || 'Anonymous',
+                summary: insights.summary || 'No summary available',
+                posted_at: post.posted_at,
+                platform: post.platform,
+                vibe_tags: insights.vibe_tags || [],
+                dishes_detected: insights.dishes_detected || [],
+                original_url: post.original_url
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            count: formattedPosts.length,
+            data: formattedPosts
+        });
+
+    } catch (error: any) {
+        console.error('❌ Get Posts Error:', error.message);
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+};
