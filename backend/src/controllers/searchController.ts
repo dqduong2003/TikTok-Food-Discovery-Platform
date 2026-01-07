@@ -17,14 +17,21 @@ export const searchVenues = async (req: Request, res: Response) => {
           id, name, address, cached_rating, review_count, 
           preview_video_url, consolidated_vibes, consolidated_dishes,
           lat, lng  
-        `); 
+        `)
+        // --- AUSTRALIA COORDINATE BOUNDS ---
+        .gte('lat', -44.0)
+        .lte('lat', -10.0)
+        .gte('lng', 112.0)
+        .lte('lng', 154.0);
 
         // A. Full Text Search
         if (queryText) {
-            queryBuilder = queryBuilder.textSearch('venue_search_vector', queryText, {
-                config: 'english',
-                type: 'plain'
-            });
+            // Converts 'bingsu' to 'bingsu:*' for prefix matching
+            const tsQuery = `${queryText}:*`; 
+        
+            queryBuilder = queryBuilder.or(
+              `name.ilike.%${queryText}%, venue_search_vector.fts(simple).${tsQuery}, address.ilike.%${queryText}%`
+            );
         } else {
             // B. Default Feed
             queryBuilder = queryBuilder
