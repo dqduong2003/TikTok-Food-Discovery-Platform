@@ -4,8 +4,19 @@ import { processVideoPipeline, IngestData } from '../services/workflow';
 
 async function run() {
   try {
-    // 1. Read local JSON file
-    const jsonPath = path.join(__dirname, '../../data/dessert-data.json'); 
+    // 1. Get the filename from command line arguments (Index 2 is the first argument)
+    const fileName = process.argv[2]; 
+
+    if (!fileName) {
+      console.error('❌ Error: Please provide a JSON filename.');
+      console.error('   Usage: npm run scrape:local -- <filename.json>');
+      process.exit(1);
+    }
+
+    // Construct the path dynamically
+    const jsonPath = path.join(__dirname, `../../data/${fileName}`);
+
+    console.log(`📂 Loading data from: ${fileName}`);
     
     if (!fs.existsSync(jsonPath)) {
       throw new Error(`File not found at: ${jsonPath}`);
