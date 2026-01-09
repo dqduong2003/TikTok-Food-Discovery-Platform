@@ -35,8 +35,7 @@ export const searchVenues = async (req: Request, res: Response) => {
         const coords = await getCoordinates(intent.locationName);
         
         if (coords) {
-            // Create a "Search Box" approx +/- 0.05 degrees (roughly 5km radius)
-            const RADIUS = 0.03; 
+            const RADIUS = 0.02; 
             
             minLat = coords.lat - RADIUS;
             maxLat = coords.lat + RADIUS;
