@@ -34,21 +34,23 @@ type SortCriteria = 'rating' | 'reviews';
 const App: React.FC = () => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [query, setQuery] = useState(''); // Actual query sent to backend
   const [sortCriteria, setSortCriteria] = useState<SortCriteria>('rating');
   const [activePlaceId, setActivePlaceId] = useState<number | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [mapCenter, setMapCenter] = useState<{ lng: number; lat: number } | null>(null);
 
   // 1. NEW: Create a Ref to store card DOM elements
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
-  // FETCH
+  // FETCH - Only triggers when query changes (set by Enter key)
   useEffect(() => {
     const fetchVenues = async () => {
       setIsLoading(true);
       try {
-        const url = searchTerm 
-          ? `http://localhost:4000/api/search?q=${encodeURIComponent(searchTerm)}`
+        const url = query 
+          ? `http://localhost:4000/api/search?q=${encodeURIComponent(query)}`
           : `http://localhost:4000/api/search`;
         
         const res = await fetch(url);
@@ -57,6 +59,11 @@ const App: React.FC = () => {
         if (json.success) {
           const adapted = json.data.map(transformBackendData);
           setPlaces(adapted);
+
+          if (json.meta && json.meta.center) {
+            const [lng, lat] = json.meta.center;
+            setMapCenter({ lng, lat });
+         }
         }
       } catch (err) {
         console.error("Failed to fetch venues:", err);
@@ -65,9 +72,8 @@ const App: React.FC = () => {
       }
     };
 
-    const timer = setTimeout(fetchVenues, 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+    fetchVenues();
+  }, [query]);
 
   // 2. NEW: Scroll to the active item whenever activePlaceId changes
   useEffect(() => {
@@ -102,6 +108,11 @@ const App: React.FC = () => {
             placeholder="Search: e.g. 'Matcha'..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setQuery(searchTerm);
+              }
+            }}
             className="w-full bg-white/70 backdrop-blur-md border-2 border-[#2d2a28] py-[15px] px-[25px] rounded-full font-['Space_Mono'] text-[1rem] outline-none transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] focus:bg-white focus:shadow-[10px_10px_0px_#e2725b] focus:-translate-x-1 focus:-translate-y-1"
           />
         </div>
@@ -167,6 +178,7 @@ const App: React.FC = () => {
               onMarkerClick={setSelectedPlace}
               onMarkerMouseEnter={(id) => setActivePlaceId(id)}
               onMarkerMouseLeave={() => setActivePlaceId(null)}
+              forcedCenter={mapCenter}
            />
         </div>
 

@@ -16,6 +16,7 @@ export const searchVenues = async (req: Request, res: Response) => {
     let minLat = -44.0, maxLat = -10.0;
     let minLng = 112.0, maxLng = 154.0;
     let locationContext = "Australia";
+    let locationCenter: [number, number] | null = null;
 
     const wordCount = rawQuery.trim().split(/\s+/).length;
 
@@ -43,6 +44,7 @@ export const searchVenues = async (req: Request, res: Response) => {
             maxLng = coords.lng + RADIUS;
             
             locationContext = intent.locationName;
+            locationCenter = [coords.lng, coords.lat];
         }
       }
     }
@@ -82,7 +84,8 @@ export const searchVenues = async (req: Request, res: Response) => {
         success: true, 
         meta: {
             location: locationContext,
-            search_terms: searchTerms
+            search_terms: searchTerms,
+            center: locationCenter
         },
         count: data?.length || 0,
         data: data 

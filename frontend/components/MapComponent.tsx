@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Place } from '../types';
-// 1. Import CSS and Plugin
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
@@ -14,6 +13,8 @@ interface MapComponentProps {
   onMarkerClick: (place: Place) => void;
   onMarkerMouseEnter: (id: number) => void;
   onMarkerMouseLeave: () => void;
+  // --- ADDED PROP ---
+  forcedCenter: { lng: number; lat: number } | null;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ 
@@ -21,7 +22,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   activePlaceId, 
   onMarkerClick,
   onMarkerMouseEnter,
-  onMarkerMouseLeave
+  onMarkerMouseLeave,
+  forcedCenter // --- DESTRUCTURED HERE ---
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -42,7 +44,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    // 2. Add the Geocoder Control
     const geocoder = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken,
       marker: false,
@@ -52,12 +53,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     mapRef.current.addControl(geocoder, 'top-left');
 
-    // 3. Optional: Listen for result to trigger your own logic (e.g. search DB in that area)
-    geocoder.on('result', (e) => {
-      const coords = e.result.geometry.coordinates;
-      console.log("User moved map to:", coords);
-    });
-
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
@@ -65,72 +60,76 @@ const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, []);
 
-// 2. Create Markers
-useEffect(() => {
-  if (!mapRef.current) return;
-
-  // Cleanup old markers
-  Object.keys(markersRef.current).forEach((id) => {
-    if (!places.find((p) => p.id === Number(id))) {
-      markersRef.current[Number(id)].remove();
-      delete markersRef.current[Number(id)];
-    }
-  });
-
-  // Add new markers
-  places.forEach((place) => {
-    if (!markersRef.current[place.id]) {
-      
-      // --- Wrapper ---
-      const el = document.createElement('div');
-      el.className = 'marker-wrapper relative group';
-
-      // --- 1. The Visual Dot (Removed marker-pulse) ---
-      const dot = document.createElement('div');
-      dot.className = `
-          marker-visual w-6 h-6 border-[3px] border-white rounded-full 
-          transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] 
-          shadow-[0_4px_6px_rgba(0,0,0,0.1)] cursor-pointer 
-      `; // <--- 'marker-pulse' removed from here
-      dot.style.backgroundColor = place.color || '#e2725b';
-      
-      // --- 2. The Label (Tooltip) ---
-      const label = document.createElement('div');
-      label.className = `
-          marker-label absolute bg-[#2d2a28] text-white px-4 py-2 rounded 
-          font-['Space_Mono'] text-[0.7rem] whitespace-nowrap pointer-events-none
-          shadow-[5px_5px_0px_#8a9a5b] transition-all duration-300 left-1/2 -translate-x-1/2
-      `;
-      label.innerText = place.name;
-      
-      // Default Hidden State
-      label.style.opacity = '0';
-      label.style.transform = 'translate(-50%, 0px)'; 
-      label.style.bottom = '35px';
-
-      // Append to wrapper
-      el.appendChild(dot);
-      el.appendChild(label);
-
-      // --- Events ---
-      el.addEventListener('mouseenter', () => onMarkerMouseEnter(place.id));
-      el.addEventListener('mouseleave', () => onMarkerMouseLeave());
-      el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          mapRef.current?.flyTo({ center: [place.lng, place.lat], zoom: 15 });
-          onMarkerClick(place);
+  // --- NEW: HANDLE INTELLIGENT FLY TO ---
+  useEffect(() => {
+    if (mapRef.current && forcedCenter) {
+      mapRef.current.flyTo({
+        center: [forcedCenter.lng, forcedCenter.lat],
+        zoom: 14,
+        speed: 1.2,
+        curve: 1.4,
+        essential: true 
       });
-
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([place.lng, place.lat])
-        .addTo(mapRef.current!);
-
-      markersRef.current[place.id] = marker;
     }
-  });
-}, [places, onMarkerClick, onMarkerMouseEnter, onMarkerMouseLeave]);
+  }, [forcedCenter]); // Only triggers when the detected location changes
 
-  // 3. Handle Active State (Scale Dot + Show Label)
+  // 2. Create Markers
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    Object.keys(markersRef.current).forEach((id) => {
+      if (!places.find((p) => p.id === Number(id))) {
+        markersRef.current[Number(id)].remove();
+        delete markersRef.current[Number(id)];
+      }
+    });
+
+    places.forEach((place) => {
+      if (!markersRef.current[place.id]) {
+        const el = document.createElement('div');
+        el.className = 'marker-wrapper relative group';
+
+        const dot = document.createElement('div');
+        dot.className = `
+            marker-visual w-6 h-6 border-[3px] border-white rounded-full 
+            transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] 
+            shadow-[0_4px_6px_rgba(0,0,0,0.1)] cursor-pointer 
+        `; 
+        dot.style.backgroundColor = place.color || '#e2725b';
+        
+        const label = document.createElement('div');
+        label.className = `
+            marker-label absolute bg-[#2d2a28] text-white px-4 py-2 rounded 
+            font-['Space_Mono'] text-[0.7rem] whitespace-nowrap pointer-events-none
+            shadow-[5px_5px_0px_#8a9a5b] transition-all duration-300 left-1/2 -translate-x-1/2
+        `;
+        label.innerText = place.name;
+        
+        label.style.opacity = '0';
+        label.style.transform = 'translate(-50%, 0px)'; 
+        label.style.bottom = '35px';
+
+        el.appendChild(dot);
+        el.appendChild(label);
+
+        el.addEventListener('mouseenter', () => onMarkerMouseEnter(place.id));
+        el.addEventListener('mouseleave', () => onMarkerMouseLeave());
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mapRef.current?.flyTo({ center: [place.lng, place.lat], zoom: 15 });
+            onMarkerClick(place);
+        });
+
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([place.lng, place.lat])
+          .addTo(mapRef.current!);
+
+        markersRef.current[place.id] = marker;
+      }
+    });
+  }, [places, onMarkerClick, onMarkerMouseEnter, onMarkerMouseLeave]);
+
+  // 3. Handle Active State
   useEffect(() => {
     Object.keys(markersRef.current).forEach((id) => {
         const marker = markersRef.current[Number(id)];
@@ -140,25 +139,15 @@ useEffect(() => {
         const label = el.querySelector('.marker-label') as HTMLElement;
         
         if (Number(id) === activePlaceId) {
-            // ACTIVE STATE
-            el.style.zIndex = '50'; // Bring to front
-            
-            if (dot) {
-                dot.style.transform = 'scale(1.5)';
-                // Optional: Stop pulsing when active if it's distracting? 
-                // dot.classList.remove('marker-pulse'); 
-            }
+            el.style.zIndex = '50';
+            if (dot) dot.style.transform = 'scale(1.5)';
             if (label) {
                 label.style.opacity = '1';
-                label.style.transform = 'translate(-50%, -10px)'; // Little float up animation
+                label.style.transform = 'translate(-50%, -10px)'; 
             }
         } else {
-            // INACTIVE STATE
             el.style.zIndex = '1';
-            
-            if (dot) {
-                dot.style.transform = 'scale(1)';
-            }
+            if (dot) dot.style.transform = 'scale(1)';
             if (label) {
                 label.style.opacity = '0';
                 label.style.transform = 'translate(-50%, 0px)';
