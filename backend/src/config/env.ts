@@ -7,6 +7,7 @@ export const CONFIG = {
     GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY || "",
     SUPABASE_URL: process.env.SUPABASE_URL || "",
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY || "",
+    MAPBOX_ACCESS_TOKEN: process.env.MAPBOX_ACCESS_TOKEN || "",
 };
 
 // Validate all required environment variables
@@ -15,6 +16,7 @@ const requiredKeys: (keyof typeof CONFIG)[] = [
     'GOOGLE_PLACES_API_KEY',
     'SUPABASE_URL',
     'SUPABASE_SECRET_KEY',
+    'MAPBOX_ACCESS_TOKEN',
 ];
 
 for (const key of requiredKeys) {
