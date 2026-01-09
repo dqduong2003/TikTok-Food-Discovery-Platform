@@ -1,60 +1,98 @@
 import { Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { parseSearchIntent } from '../services/gemini';
+import { getCoordinates } from '../services/geocoder';
 import { CONFIG } from '../config/env';
 
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_SECRET_KEY);
 
 export const searchVenues = async (req: Request, res: Response) => {
-    try {
-      const { q } = req.query;
-      const queryText = (q as string) || '';
+  try {
+    const { q } = req.query;
+    const rawQuery = (q as string) || '';
 
-      console.log(`🔍 Search Request: "${queryText}"`);
-    
-      let queryBuilder = supabase
-        .from('venues')
-        .select(`
-          id, name, address, cached_rating, review_count, 
-          preview_video_url, consolidated_vibes, consolidated_dishes,
-          lat, lng  
-        `)
-        // --- AUSTRALIA COORDINATE BOUNDS ---
-        .gte('lat', -44.0)
-        .lte('lat', -10.0)
-        .gte('lng', 112.0)
-        .lte('lng', 154.0);
+    // Default Search Params (Australia Bounds)
+    let searchTerms = rawQuery;
+    let minLat = -44.0, maxLat = -10.0;
+    let minLng = 112.0, maxLng = 154.0;
+    let locationContext = "Australia";
 
-        // A. Full Text Search
-        if (queryText) {
-            // Converts 'bingsu' to 'bingsu:*' for prefix matching
-            const tsQuery = `${queryText}:*`; 
+    const wordCount = rawQuery.trim().split(/\s+/).length;
+
+    // 1. INTELLIGENT PARSING
+    if (wordCount >= 2) {
+      console.log("🧠 Query is complex, asking Gemini...");
+      
+      const intent = await parseSearchIntent(rawQuery);
+      
+      // Update the text search with the cleaned/expanded keywords
+      searchTerms = intent.searchTerms;
+      
+      // 2. LOCATION HANDLING
+      if (intent.locationName) {
+        console.log(`📍 Detected Location: ${intent.locationName}`);
+        const coords = await getCoordinates(intent.locationName);
         
-            queryBuilder = queryBuilder.or(
-              `name.ilike.%${queryText}%, venue_search_vector.fts(simple).${tsQuery}, address.ilike.%${queryText}%`
-            );
-        } else {
-            // B. Default Feed
-            queryBuilder = queryBuilder
-                .order('cached_rating', { ascending: false })
-                .limit(50);
+        if (coords) {
+            // Create a "Search Box" approx +/- 0.05 degrees (roughly 5km radius)
+            const RADIUS = 0.03; 
+            
+            minLat = coords.lat - RADIUS;
+            maxLat = coords.lat + RADIUS;
+            minLng = coords.lng - RADIUS;
+            maxLng = coords.lng + RADIUS;
+            
+            locationContext = intent.locationName;
         }
-
-        const { data, error } = await queryBuilder;
-
-        if (error) throw error;
-
-        // Data now already has lat/lng! No need to map manually.
-        return res.status(200).json({
-            success: true,
-            count: data.length,
-            data: data 
-        });
-
-    } catch (error: any) {
-        console.error('❌ Search Error:', error.message);
-        return res.status(500).json({ success: false, error: 'Internal Server Error' });
+      }
     }
-}
+
+    // 3. BUILD QUERY
+    let queryBuilder = supabase
+      .from('venues')
+      .select(`id, name, address, cached_rating, review_count, lat, lng, preview_video_url`)
+      // Apply Dynamic Location Filter
+      .gte('lat', minLat)
+      .lte('lat', maxLat)
+      .gte('lng', minLng)
+      .lte('lng', maxLng);
+
+    // 4. TEXT MATCHING
+    if (searchTerms) {
+      const termsArray = searchTerms
+          .replace(/,/g, ' ')
+          .trim()
+          .split(/\s+/)
+          .filter(term => term.length > 0);
+  
+      // Use '|' (OR) for AI synonyms so we don't over-filter
+      const tsQuery = termsArray.join(' | ') + ':*'; 
+  
+      console.log(`🔍 Flexible Query: "${tsQuery}"`);
+  
+      queryBuilder = queryBuilder.or(
+        `name.ilike.%${rawQuery}%, venue_search_vector.fts(simple).${tsQuery}`
+      );
+  }
+
+    const { data, error } = await queryBuilder;
+    if (error) throw error;
+
+    return res.status(200).json({ 
+        success: true, 
+        meta: {
+            location: locationContext,
+            search_terms: searchTerms
+        },
+        count: data?.length || 0,
+        data: data 
+    });
+
+  } catch (error: any) {
+    console.error('❌ Search Error:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
 
 export const getVenuePosts = async (req: Request, res: Response) => {
     try {
