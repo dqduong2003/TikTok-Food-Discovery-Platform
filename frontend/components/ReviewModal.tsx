@@ -19,7 +19,8 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ place, onClose }) => {
       setError(null);
       
       try {
-        const response = await fetch(`http://localhost:4000/api/venues/${place.id}/posts`);
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const response = await fetch(`${API_BASE}/api/venues/${place.id}/posts`);
         const json = await response.json();
 
         if (isMounted) {
