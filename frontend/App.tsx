@@ -49,9 +49,11 @@ const App: React.FC = () => {
     const fetchVenues = async () => {
       setIsLoading(true);
       try {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
         const url = query 
-          ? `http://localhost:4000/api/search?q=${encodeURIComponent(query)}`
-          : `http://localhost:4000/api/search`;
+          ? `${API_BASE}/api/search?q=${encodeURIComponent(query)}`
+          : `${API_BASE}/api/search`;
         
         const res = await fetch(url);
         const json = await res.json();
