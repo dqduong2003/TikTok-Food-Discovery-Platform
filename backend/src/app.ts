@@ -4,11 +4,28 @@ import routes from './routes';
 
 const app = express();
 
+// Define allowed origins
+const allowedOrigins = [
+  'http://localhost:5173',        // Local Vite (Standard)
+  'http://localhost:3000',        // Local React (Alternative)
+  'https://reelfoodplaces.vercel.app',
+];
+
 app.use(cors({
-  origin: 'http://localhost:3000', // Only allow YOUR frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed actions
-  credentials: true // Allow cookies if you need them later
+  origin: (origin, callback) => {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true 
 })); 
+
 app.use(express.json());
 
 // Mount the API routes
