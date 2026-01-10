@@ -85,27 +85,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
     places.forEach((place) => {
       if (!markersRef.current[place.id]) {
         const el = document.createElement('div');
-        el.className = 'marker-wrapper relative group';
+        el.className = 'marker-wrapper';
 
         const dot = document.createElement('div');
-        dot.className = `
-            marker-visual w-6 h-6 border-[3px] border-white rounded-full 
-            transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] 
-            shadow-[0_4px_6px_rgba(0,0,0,0.1)] cursor-pointer 
-        `; 
+        dot.className = 'marker-visual'; 
         dot.style.backgroundColor = place.color || '#e2725b';
         
         const label = document.createElement('div');
-        label.className = `
-            marker-label absolute bg-[#2d2a28] text-white px-4 py-2 rounded 
-            font-['Space_Mono'] text-[0.7rem] whitespace-nowrap pointer-events-none
-            shadow-[5px_5px_0px_#8a9a5b] transition-all duration-300 left-1/2 -translate-x-1/2
-        `;
+        label.className = 'marker-label';
         label.innerText = place.name;
-        
-        label.style.opacity = '0';
-        label.style.transform = 'translate(-50%, 0px)'; 
-        label.style.bottom = '35px';
 
         el.appendChild(dot);
         el.appendChild(label);
@@ -137,19 +125,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
         const label = el.querySelector('.marker-label') as HTMLElement;
         
         if (Number(id) === activePlaceId) {
-            el.style.zIndex = '50';
-            if (dot) dot.style.transform = 'scale(1.5)';
-            if (label) {
-                label.style.opacity = '1';
-                label.style.transform = 'translate(-50%, -10px)'; 
-            }
+          el.style.zIndex = '50';
+          label.classList.add('active');
         } else {
-            el.style.zIndex = '1';
-            if (dot) dot.style.transform = 'scale(1)';
-            if (label) {
-                label.style.opacity = '0';
-                label.style.transform = 'translate(-50%, 0px)';
-            }
+          el.style.zIndex = '1';
+          label.classList.remove('active');
         }
     });
   }, [activePlaceId]);
