@@ -51,7 +51,7 @@ export const searchVenues = async (req: Request, res: Response) => {
     // 3. BUILD QUERY
     let queryBuilder = supabase
       .from('venues')
-      .select(`id, name, address, cached_rating, review_count, lat, lng, preview_video_url`)
+      .select(`id, name, address, cached_rating, review_count, lat, lng, consolidated_vibes`)
       // Apply Dynamic Location Filter
       .gte('lat', minLat)
       .lte('lat', maxLat)
