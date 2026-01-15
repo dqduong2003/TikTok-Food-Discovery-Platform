@@ -78,7 +78,22 @@ git clone [https://github.com/yourusername/reel-food-places.git](https://github.
 cd reel-food-places
 ```
 
-### 2. Backend Setup
+### 2. Database Setup (Supabase)
+
+Before running the app, you need to set up the database schema and search functions.
+
+1.  **Create a new Project** on [Supabase](https://supabase.com/).
+2.  Go to the **SQL Editor** in the left sidebar.
+3.  **Run the Schema:**
+    * Open `supabase/schema.sql` from this repository.
+    * Paste the content into the SQL Editor and click **Run**.
+    * *This creates the tables (`venues`, `social_posts`, `ai_insights`) and enables PostGIS.*
+4.  **Run the Functions:**
+    * Open `supabase/functions.sql`.
+    * Paste the content into the SQL Editor and click **Run**.
+    * *This enables the AI search logic, vector extensions, and performance indexes.*
+
+### 3. Backend Setup
 ```
 cd backend
 npm install
@@ -94,7 +109,7 @@ echo "MAPBOX_ACCESS_TOKEN=your_mapbox_token" >> .env
 npm run dev
 ```
 
-### 3. Frontend Setup
+### 4. Frontend Setup
 ```
 cd frontend
 npm install
