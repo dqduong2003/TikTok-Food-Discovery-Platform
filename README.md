@@ -2,8 +2,7 @@
 
 > **A viral food discovery engine powered by AI, Vectors, and Reels.**
 
-[Insert Main App Screenshot Here]
-*Snapshot of the main map interface showing markers and the search bar.*
+![Main App](assets/main_app.gif)
 
 ## 📖 About The Project
 
@@ -40,7 +39,8 @@ It consists of two core systems:
 
 Unlike standard keyword searches, this project uses a multi-step AI pipeline to understand user intent.
 
-[Insert Screenshot of Search Bar / AI Processing Log Here]
+![Search Bar](assets/search.gif)
+![Search Log](assets/search_log.png)
 
 1.  **Input Analysis:** The user types a query (e.g., *"Cozy cafes for study near CBD"*).
 2.  **Gemini Parsing:** The backend sends this to Google Gemini, which extracts:
@@ -54,7 +54,7 @@ Unlike standard keyword searches, this project uses a multi-step AI pipeline to 
 
 ## 🕷️ The Scraper (Data Pipeline)
 
-[Insert Screenshot of Scraper Terminal or Data Table Here]
+![Scraper Log](assets/scraper_log.png)
 
 The project includes a custom scraper designed to populate the database with high-quality content.
 
