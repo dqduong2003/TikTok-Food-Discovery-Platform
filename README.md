@@ -1,10 +1,15 @@
 # 🍱 Reel Food Places
 
+**Try the App:** [https://reelfoodplaces.vercel.app/](https://reelfoodplaces.vercel.app/)
+
 > **A viral food discovery engine powered by AI, Vectors, and Reels.**
 
 ![Main App](assets/main_app.gif)
 
 ## 📖 About The Project
+
+> **⚠️ Note on Data Availability:**
+> This application relies on a custom-scraped dataset of viral food videos. Currently, the dataset **only covers Melbourne and Sydney, Australia**. Searching for locations outside these cities will not yield results.
 
 **Reel Food Places** is a full-stack application that bridges the gap between viral social media food content and actionable discovery. Instead of saving TikTok videos to a "Must Try" folder that you never look at again, this app visualizes them on an interactive map.
 
